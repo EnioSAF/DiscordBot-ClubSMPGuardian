@@ -15,17 +15,17 @@ ClubSMP Guardian is a Discord bot designed for the ClubSMP Discord server. It ha
 ### Step 1: Clone the Repository
 
 Clone the repository to your local machine:
-```bash
+
 git clone https://github.com/yourusername/ClubSMP-Guardian.git
 cd ClubSMP-Guardian
-```
+
 
 ### Step 2: Run the Setup Script
 
 Run the setup script to create the `.env` file and install necessary dependencies:
-```bash
+
 python setup.py
-```
+
 
 The setup script will prompt you to enter the following information:
 
@@ -56,15 +56,15 @@ The setup script will prompt you to enter the following information:
 ### Step 3: Run the Bot
 
 After running the setup script and creating the `.env` file, you can start the bot with:
-```bash
+
 python guardian.py
-```
+
 
 ## .env File Example
 
 Here is an example of what your `.env` file should look like:
 
-```env
+
 DISCORD_BOT_TOKEN=YOUR_DISCORD_BOT_TOKEN
 GUILD_ID=YOUR_GUILD_ID
 TWITCH_CLIENT_ID=YOUR_TWITCH_CLIENT_ID
@@ -72,7 +72,7 @@ TWITCH_CLIENT_SECRET=YOUR_TWITCH_CLIENT_SECRET
 TWITCH_ACCESS_TOKEN=YOUR_TWITCH_ACCESS_TOKEN
 TWITCH_USERNAMES=twitchusername1,twitchusername2
 DISCORD_CHANNEL_ID=YOUR_DISCORD_CHANNEL_ID
-```
+
 
 ## Dependencies
 
