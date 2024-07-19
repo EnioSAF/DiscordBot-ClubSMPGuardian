@@ -4,6 +4,7 @@ from discord import app_commands
 import os
 from dotenv import load_dotenv
 import requests
+import json
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -12,8 +13,22 @@ GUILD_ID = os.getenv('GUILD_ID')
 TWITCH_CLIENT_ID = os.getenv('TWITCH_CLIENT_ID')
 TWITCH_CLIENT_SECRET = os.getenv('TWITCH_CLIENT_SECRET')
 TWITCH_ACCESS_TOKEN = os.getenv('TWITCH_ACCESS_TOKEN')
-TWITCH_USERNAMES = os.getenv('TWITCH_USERNAMES').lower().split(',')
 DISCORD_CHANNEL_ID = int(os.getenv('DISCORD_CHANNEL_ID'))
+
+# Load Twitch usernames from a file
+TWITCH_USERNAMES_FILE = 'twitch_usernames.json'
+
+def load_twitch_usernames():
+    if os.path.exists(TWITCH_USERNAMES_FILE):
+        with open(TWITCH_USERNAMES_FILE, 'r') as f:
+            return json.load(f)
+    return []
+
+def save_twitch_usernames(usernames):
+    with open(TWITCH_USERNAMES_FILE, 'w') as f:
+        json.dump(usernames, f)
+
+TWITCH_USERNAMES = load_twitch_usernames()
 
 print(f"Discord Bot Token: {TOKEN}")
 print(f"Guild ID: {GUILD_ID}")
@@ -70,6 +85,34 @@ async def say(interaction: discord.Interaction, message: str):
 async def say_error(interaction: discord.Interaction, error):
     if isinstance(error, app_commands.MissingPermissions):
         await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+
+# Command: list_channels (admin only)
+@bot.tree.command(name='list_channels', description='Lists the monitored Twitch channels', guild=discord.Object(id=int(GUILD_ID)))
+@app_commands.checks.has_permissions(administrator=True)
+async def list_channels(interaction: discord.Interaction):
+    await interaction.response.send_message(f"Monitored Twitch channels: {', '.join(TWITCH_USERNAMES)}")
+
+# Command: add_channel (admin only)
+@bot.tree.command(name='add_channel', description='Adds a new Twitch channel to monitor', guild=discord.Object(id=int(GUILD_ID)))
+@app_commands.checks.has_permissions(administrator=True)
+async def add_channel(interaction: discord.Interaction, channel: str):
+    if channel not in TWITCH_USERNAMES:
+        TWITCH_USERNAMES.append(channel)
+        save_twitch_usernames(TWITCH_USERNAMES)
+        await interaction.response.send_message(f"Channel '{channel}' added to the monitored list.")
+    else:
+        await interaction.response.send_message(f"Channel '{channel}' is already in the monitored list.")
+
+# Command: remove_channel (admin only)
+@bot.tree.command(name='remove_channel', description='Removes a Twitch channel from monitoring', guild=discord.Object(id=int(GUILD_ID)))
+@app_commands.checks.has_permissions(administrator=True)
+async def remove_channel(interaction: discord.Interaction, channel: str):
+    if channel in TWITCH_USERNAMES:
+        TWITCH_USERNAMES.remove(channel)
+        save_twitch_usernames(TWITCH_USERNAMES)
+        await interaction.response.send_message(f"Channel '{channel}' removed from the monitored list.")
+    else:
+        await interaction.response.send_message(f"Channel '{channel}' is not in the monitored list.")
 
 # Background task to check Twitch streams
 @tasks.loop(minutes=5)
