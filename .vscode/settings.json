@@ -1,0 +1,8 @@
+{
+    "workbench.colorCustomizations": {
+        "activityBar.background": "#391149",
+        "titleBar.activeBackground": "#c26bc52c",
+        "titleBar.activeForeground": "#F5FEDC"
+    },
+    "deepscan.enable": true
+}
