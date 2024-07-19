@@ -14,6 +14,7 @@ bot = commands.Bot(command_prefix='/', intents=intents)
 
 @bot.event
 async def on_ready():
+    print(f'Bot made by Enio SadFlower for the ClubSMP Discord Server.')
     print(f'Connecté en tant que {bot.user}')
     try:
         synced = await bot.tree.sync(guild=discord.Object(id=int(GUILD_ID)))
