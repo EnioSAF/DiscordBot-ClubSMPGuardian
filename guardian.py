@@ -30,6 +30,10 @@ def save_twitch_usernames(usernames):
 
 TWITCH_USERNAMES = load_twitch_usernames()
 
+# Dictionary to keep track of live status and message IDs
+live_status = {username: False for username in TWITCH_USERNAMES}
+live_messages = {}
+
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='/', intents=intents)
@@ -45,12 +49,9 @@ def get_new_twitch_token():
     response = requests.post(url, params=params)
     data = response.json()
 
-    print(f"Token request response: {data}")
-
     if 'access_token' in data:
         return data['access_token']
     else:
-        print(f"Failed to get a new token: {data}")
         return None
 
 # Event triggered when the bot is ready
@@ -60,9 +61,8 @@ async def on_ready():
     print(f'Connected as {bot.user}')
     try:
         synced = await bot.tree.sync(guild=discord.Object(id=int(GUILD_ID)))
-        print(f'Synchronized {len(synced)} commands')
     except Exception as e:
-        print(f'Error during synchronization: {e}')
+        pass
 
     # Start Twitch live notification task
     check_twitch_streams.start()
@@ -90,6 +90,7 @@ async def list_channels(interaction: discord.Interaction):
 async def add_channel(interaction: discord.Interaction, channel: str):
     if channel not in TWITCH_USERNAMES:
         TWITCH_USERNAMES.append(channel)
+        live_status[channel] = False
         save_twitch_usernames(TWITCH_USERNAMES)
         await interaction.response.send_message(f"Channel '{channel}' added to the monitored list.")
     else:
@@ -101,13 +102,15 @@ async def add_channel(interaction: discord.Interaction, channel: str):
 async def remove_channel(interaction: discord.Interaction, channel: str):
     if channel in TWITCH_USERNAMES:
         TWITCH_USERNAMES.remove(channel)
+        live_status.pop(channel, None)
+        live_messages.pop(channel, None)
         save_twitch_usernames(TWITCH_USERNAMES)
         await interaction.response.send_message(f"Channel '{channel}' removed from the monitored list.")
     else:
         await interaction.response.send_message(f"Channel '{channel}' is not in the monitored list.")
 
 # Background task to check Twitch streams
-@tasks.loop(minutes=5)
+@tasks.loop(minutes=1)
 async def check_twitch_streams():
     global TWITCH_ACCESS_TOKEN
     headers = {
@@ -121,36 +124,40 @@ async def check_twitch_streams():
         response = requests.get(url, headers=headers, params=params)
 
         if response.status_code == 401:  # Unauthorized
-            print("Access token expired, fetching a new one...")
             new_token = get_new_twitch_token()
             if new_token:
                 TWITCH_ACCESS_TOKEN = new_token
                 headers['Authorization'] = f'Bearer {TWITCH_ACCESS_TOKEN}'
                 response = requests.get(url, headers=headers, params=params)
-                print(f"New response status code: {response.status_code}")
-                print(f"New response headers: {response.headers}")
             else:
-                print("Failed to renew access token")
                 continue
 
         data = response.json()
-        print(f"Response from Twitch API for {username}: {data}")
 
         if 'data' in data and data['data']:
-            stream = data['data'][0]
-            title = stream['title']
-            viewers = stream['viewer_count']
-            stream_url = f'https://www.twitch.tv/{username}'
+            if not live_status[username]:
+                live_status[username] = True
+                stream = data['data'][0]
+                title = stream['title']
+                viewers = stream['viewer_count']
+                stream_url = f'https://www.twitch.tv/{username}'
 
-            channel = bot.get_channel(DISCORD_CHANNEL_ID)
-            await channel.send(f"{username} is now live: {title} - {viewers} viewers\n{stream_url}")
+                channel = bot.get_channel(DISCORD_CHANNEL_ID)
+                message = await channel.send(f"{username} is now live: {title} - {viewers} viewers\n{stream_url}")
+                live_messages[username] = message.id
         else:
-            print(f"No live stream found for {username}")
+            if live_status[username]:
+                live_status[username] = False
+                channel = bot.get_channel(DISCORD_CHANNEL_ID)
+                if username in live_messages:
+                    message = await channel.fetch_message(live_messages[username])
+                    await message.delete()
+                    live_messages.pop(username, None)
 
 # Error handling for the Twitch task
 @check_twitch_streams.error
 async def on_check_twitch_streams_error(error):
-    print(f'Error checking Twitch streams: {error}')
+    pass
 
 # Run the bot
 bot.run(TOKEN)
