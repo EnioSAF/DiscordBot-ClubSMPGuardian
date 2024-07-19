@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
-TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+TOKEN = os.getenv('DISCORD_BOT_TOKEN') # Import Bot Token in .env locally
 
 intents = discord.Intents.default()
 intents.message_content = True
