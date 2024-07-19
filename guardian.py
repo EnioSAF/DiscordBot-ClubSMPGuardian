@@ -30,14 +30,6 @@ def save_twitch_usernames(usernames):
 
 TWITCH_USERNAMES = load_twitch_usernames()
 
-print(f"Discord Bot Token: {TOKEN}")
-print(f"Guild ID: {GUILD_ID}")
-print(f"Twitch Client ID: {TWITCH_CLIENT_ID}")
-print(f"Twitch Client Secret: {TWITCH_CLIENT_SECRET}")
-print(f"Twitch Access Token: {TWITCH_ACCESS_TOKEN}")
-print(f"Twitch Usernames: {TWITCH_USERNAMES}")
-print(f"Discord Channel ID: {DISCORD_CHANNEL_ID}")
-
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='/', intents=intents)
@@ -126,13 +118,7 @@ async def check_twitch_streams():
     for username in TWITCH_USERNAMES:
         params = {'user_login': username}
         url = 'https://api.twitch.tv/helix/streams'
-        print(f"Request URL: {url}")
-        print(f"Request Headers: {headers}")
-        print(f"Request Params: {params}")
-
         response = requests.get(url, headers=headers, params=params)
-        print(f"Response status code: {response.status_code}")
-        print(f"Response headers: {response.headers}")
 
         if response.status_code == 401:  # Unauthorized
             print("Access token expired, fetching a new one...")
